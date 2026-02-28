@@ -37,7 +37,8 @@ class UploadButton extends StatelessWidget {
 
       if (result != null && result.files.isNotEmpty && context.mounted) {
         final fileName = result.files.first.name;
-        await context.read<SleepProvider>().handleUpload(fileName);
+        final filePath = result.files.first.path;
+        await context.read<SleepProvider>().handleUpload(fileName, filePath: filePath);
       }
     } catch (_) {
       // File picker cancelled or error - generate demo data instead

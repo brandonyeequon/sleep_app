@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/sleep_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/onboarding_screen.dart';
+import 'services/audio_analysis_service.dart';
 import 'services/sleep_analysis_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
@@ -14,11 +15,16 @@ void main() async {
   await storageService.init();
 
   final analysisService = SleepAnalysisService();
+
+  final audioAnalysisService = AudioAnalysisService();
+  await audioAnalysisService.init();
+
   final hasProfile = storageService.hasUserProfile();
 
   runApp(SomnixApp(
     storageService: storageService,
     analysisService: analysisService,
+    audioAnalysisService: audioAnalysisService,
     hasProfile: hasProfile,
   ));
 }
@@ -26,12 +32,14 @@ void main() async {
 class SomnixApp extends StatelessWidget {
   final StorageService storageService;
   final SleepAnalysisService analysisService;
+  final AudioAnalysisService audioAnalysisService;
   final bool hasProfile;
 
   const SomnixApp({
     super.key,
     required this.storageService,
     required this.analysisService,
+    required this.audioAnalysisService,
     required this.hasProfile,
   });
 
@@ -41,6 +49,7 @@ class SomnixApp extends StatelessWidget {
       create: (_) => SleepProvider(
         storageService: storageService,
         analysisService: analysisService,
+        audioAnalysisService: audioAnalysisService,
       )..loadSessions(),
       child: MaterialApp(
         title: 'Somnix',

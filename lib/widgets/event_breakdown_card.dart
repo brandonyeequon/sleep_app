@@ -45,6 +45,18 @@ class EventBreakdownCard extends StatelessWidget {
               icon: Icons.repeat_rounded,
             ),
             const SizedBox(height: 16),
+            _StatRow(
+              label: 'Total Snoring Time',
+              value: _formatSnoringDuration(session.totalSnoringDuration),
+              icon: Icons.volume_up_rounded,
+            ),
+            const SizedBox(height: 16),
+            _StatRow(
+              label: 'Recovery Gasps',
+              value: session.recoveryGaspEvents.toString(),
+              icon: Icons.air_rounded,
+            ),
+            const SizedBox(height: 16),
             _SnoreIntensityRow(intensity: session.snoreIntensity),
           ],
         ),
@@ -56,6 +68,15 @@ class EventBreakdownCard extends StatelessWidget {
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
     return '${hours}h ${minutes}m';
+  }
+
+  String _formatSnoringDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds.remainder(60);
+    if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    }
+    return '${seconds}s';
   }
 }
 

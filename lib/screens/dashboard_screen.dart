@@ -7,6 +7,7 @@ import '../widgets/breathing_score_card.dart';
 import '../widgets/event_breakdown_card.dart';
 import '../widgets/timeline_chart.dart';
 import '../widgets/ai_insights_card.dart';
+import '../widgets/analysis_progress_overlay.dart';
 import '../widgets/upload_button.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -24,28 +25,35 @@ class DashboardScreen extends StatelessWidget {
     }
 
     if (session == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.nightlight_round,
-              size: 64,
-              color: AppColors.textMuted.withValues(alpha: 0.3),
+      return Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.nightlight_round,
+                  size: 64,
+                  color: AppColors.textMuted.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No sleep recordings yet',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                const UploadButton(),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'No sleep recordings yet',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            const UploadButton(),
-          ],
-        ),
+          ),
+          const AnalysisProgressOverlay(),
+        ],
       );
     }
 
-    return SingleChildScrollView(
+    return Stack(
+      children: [
+        SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,6 +110,9 @@ class DashboardScreen extends StatelessWidget {
           AiInsightsCard(insights: session.aiInsights),
         ],
       ),
+    ),
+        const AnalysisProgressOverlay(),
+      ],
     );
   }
 }

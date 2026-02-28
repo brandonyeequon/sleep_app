@@ -91,10 +91,18 @@ class BreathingScoreCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 24),
                 _MetricItem(
-                  label: 'Snore Events',
-                  value: session.snoreEvents.toString(),
-                  icon: Icons.volume_up_rounded,
-                  color: AppColors.accentBlue,
+                  label: session.recoveryGaspEvents > 0
+                      ? 'Recovery Gasps'
+                      : 'Snore Events',
+                  value: session.recoveryGaspEvents > 0
+                      ? session.recoveryGaspEvents.toString()
+                      : session.snoreEvents.toString(),
+                  icon: session.recoveryGaspEvents > 0
+                      ? Icons.air_rounded
+                      : Icons.volume_up_rounded,
+                  color: session.recoveryGaspEvents > 0
+                      ? AppColors.accentPurple
+                      : AppColors.accentBlue,
                 ),
               ],
             ),

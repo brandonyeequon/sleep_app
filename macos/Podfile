@@ -38,5 +38,28 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_macos_build_settings(target)
+    target.build_configurations.each do |config|
+      # Ensure pods can find FlutterMacOS.framework during linking
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited)'
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] << ' "${PODS_CONFIGURATION_BUILD_DIR}/FlutterMacOS"'
+    end
+  end
+
+  # Copy TFLite native library into app bundle's Resources directory
+  # tflite_flutter loads from: <app>/Contents/resources/libtensorflowlite_c-mac.dylib
+  main_project = installer.aggregate_targets.first.user_project
+  runner_target = main_project.targets.find { |t| t.name == 'Runner' }
+  if runner_target
+    tflite_script = <<~SCRIPT
+      TFLITE_SRC="${PROJECT_DIR}/libtensorflowlite_c-mac.dylib"
+      TFLITE_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/resources"
+      mkdir -p "$TFLITE_DST"
+      cp -f "$TFLITE_SRC" "$TFLITE_DST/libtensorflowlite_c-mac.dylib"
+    SCRIPT
+
+    phase = runner_target.shell_script_build_phases.find { |p| p.name == 'Copy TFLite Library' }
+    phase ||= runner_target.new_shell_script_build_phase('Copy TFLite Library')
+    phase.shell_script = tflite_script
+    main_project.save
   end
 end

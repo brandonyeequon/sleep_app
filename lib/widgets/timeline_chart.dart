@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../models/sleep_event.dart';
@@ -43,6 +45,7 @@ class TimelineChart extends StatelessWidget {
 
   Widget _buildChart() {
     final barGroups = _buildBarGroups();
+    final hasTouchableData = session.events.length > 1;
 
     return BarChart(
       BarChartData(
@@ -50,15 +53,22 @@ class TimelineChart extends StatelessWidget {
         maxY: 1,
         minY: 0,
         barTouchData: BarTouchData(
-          enabled: true,
+          enabled: hasTouchableData,
           touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (_) => AppColors.cardBackground,
             tooltipPadding: const EdgeInsets.all(8),
             tooltipMargin: 8,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              final event = session.events[group.x.clamp(0, session.events.length - 1)];
+              final idx = group.x.clamp(0, session.events.length - 1);
+              if (idx < 0 || session.events.isEmpty) return null;
+              final event = session.events[idx];
+              final elapsed = session.events.isNotEmpty
+                  ? event.timestamp.difference(session.events.first.timestamp)
+                  : Duration.zero;
+              final elapsedStr = _formatElapsed(elapsed);
+              final label = _eventLabel(event.type);
               return BarTooltipItem(
-                '${event.type.name}\n${event.duration.inSeconds}s',
+                '$label at $elapsedStr (${event.duration.inSeconds}s)',
                 const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 11,
@@ -84,18 +94,48 @@ class TimelineChart extends StatelessWidget {
                 if (index < 0 || index >= session.events.length) {
                   return const SizedBox.shrink();
                 }
-                // Show label every ~10th of the timeline
-                final step = (session.events.length / 8).ceil();
-                if (index % step != 0) return const SizedBox.shrink();
+                if (session.events.isEmpty) return const SizedBox.shrink();
 
+                final firstTimestamp = session.events.first.timestamp;
+                final lastTimestamp = session.events.last.timestamp;
+                final totalSpan = lastTimestamp.difference(firstTimestamp);
+
+                // Compute elapsed time for this event
                 final event = session.events[index];
-                final hour = event.timestamp.hour;
-                final minute =
-                    event.timestamp.minute.toString().padLeft(2, '0');
+                final elapsed = event.timestamp.difference(firstTimestamp);
+
+                // Choose label interval: 15min, 30min, or 1hr depending on span
+                final intervalMinutes = totalSpan.inMinutes <= 30
+                    ? 5
+                    : totalSpan.inMinutes <= 90
+                        ? 15
+                        : 30;
+                final intervalMs = intervalMinutes * 60 * 1000;
+
+                // Show label if this event is the closest to a label interval boundary
+                final elapsedMs = elapsed.inMilliseconds;
+                final nearestBoundary =
+                    (elapsedMs / intervalMs).round() * intervalMs;
+                // Check if this is the nearest event to that boundary
+                if ((elapsedMs - nearestBoundary).abs() > intervalMs ~/ 2) {
+                  return const SizedBox.shrink();
+                }
+                // Only show if no previous event was closer to the same boundary
+                if (index > 0) {
+                  final prevElapsed = session.events[index - 1]
+                      .timestamp
+                      .difference(firstTimestamp)
+                      .inMilliseconds;
+                  if ((prevElapsed - nearestBoundary).abs() <
+                      (elapsedMs - nearestBoundary).abs()) {
+                    return const SizedBox.shrink();
+                  }
+                }
+
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    '$hour:$minute',
+                    _formatElapsed(elapsed),
                     style: const TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 10,
@@ -114,6 +154,8 @@ class TimelineChart extends StatelessWidget {
   }
 
   List<BarChartGroupData> _buildBarGroups() {
+    final barWidth = max(1.5, min(4.0, 600 / max(1, session.events.length)));
+
     return List.generate(session.events.length, (i) {
       final event = session.events[i];
       final color = _eventColor(event.type);
@@ -125,7 +167,7 @@ class TimelineChart extends StatelessWidget {
           BarChartRodData(
             toY: height,
             color: color,
-            width: 4,
+            width: barWidth,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
           ),
         ],
@@ -156,6 +198,29 @@ class TimelineChart extends StatelessWidget {
         return 0.7 + (event.duration.inSeconds / 30) * 0.3;
       case SleepEventType.recoveryGasp:
         return 0.9;
+    }
+  }
+
+  static String _formatElapsed(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  static String _eventLabel(SleepEventType type) {
+    switch (type) {
+      case SleepEventType.normalBreathing:
+        return 'Breathing';
+      case SleepEventType.snoring:
+        return 'Snoring';
+      case SleepEventType.pauseEvent:
+        return 'Pause';
+      case SleepEventType.recoveryGasp:
+        return 'Recovery Gasp';
     }
   }
 }
