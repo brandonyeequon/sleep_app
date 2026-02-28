@@ -13,10 +13,13 @@ import '../widgets/upload_button.dart';
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
+  static const double _mobileBreakpoint = 600;
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SleepProvider>();
     final session = provider.currentSession;
+    final isMobile = MediaQuery.of(context).size.width < _mobileBreakpoint;
 
     if (provider.isLoading) {
       return const Center(
@@ -51,64 +54,94 @@ class DashboardScreen extends StatelessWidget {
       );
     }
 
+    final padding = isMobile ? 16.0 : 32.0;
+    final gap = isMobile ? 12.0 : 20.0;
+
     return Stack(
       children: [
         SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header row
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Sleep Dashboard',
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Night of ${DateFormat('EEEE, MMMM d, yyyy').format(session.date)}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+      padding: EdgeInsets.all(padding),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            if (isMobile) ...[
+              Text(
+                'Sleep Dashboard',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontSize: 22,
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Night of ${DateFormat('MMM d, yyyy').format(session.date)}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 12),
               const UploadButton(),
-            ],
-          ),
-          const SizedBox(height: 28),
-
-          // Top row: Score card + Event breakdown
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: BreathingScoreCard(session: session),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sleep Dashboard',
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Night of ${DateFormat('EEEE, MMMM d, yyyy').format(session.date)}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const UploadButton(),
+                ],
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 2,
-                child: EventBreakdownCard(session: session),
-              ),
             ],
-          ),
-          const SizedBox(height: 20),
+            SizedBox(height: isMobile ? 16 : 28),
 
-          // Timeline chart
-          TimelineChart(session: session),
-          const SizedBox(height: 20),
+            // Score card + Event breakdown
+            if (isMobile) ...[
+              BreathingScoreCard(session: session),
+              SizedBox(height: gap),
+              EventBreakdownCard(session: session),
+            ] else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: BreathingScoreCard(session: session),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    flex: 2,
+                    child: EventBreakdownCard(session: session),
+                  ),
+                ],
+              ),
+            SizedBox(height: gap),
 
-          // AI Insights
-          AiInsightsCard(insights: session.aiInsights),
-        ],
+            // Timeline chart
+            TimelineChart(session: session),
+            SizedBox(height: gap),
+
+            // AI Insights
+            AiInsightsCard(insights: session.aiInsights),
+          ],
+        ),
       ),
     ),
         const AnalysisProgressOverlay(),

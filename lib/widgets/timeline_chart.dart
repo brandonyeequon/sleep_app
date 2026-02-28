@@ -13,11 +13,16 @@ class TimelineChart extends StatelessWidget {
 
   const TimelineChart({super.key, required this.session});
 
+  static const double _mobileBreakpoint = 600;
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < _mobileBreakpoint;
+    final cardPadding = isMobile ? 16.0 : 24.0;
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -33,13 +38,19 @@ class TimelineChart extends StatelessWidget {
                   'Breathing Timeline',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const Spacer(),
-                const _Legend(),
+                if (!isMobile) ...[
+                  const Spacer(),
+                  const _Legend(),
+                ],
               ],
             ),
+            if (isMobile) ...[
+              const SizedBox(height: 12),
+              const _Legend(),
+            ],
             const SizedBox(height: 24),
             SizedBox(
-              height: 180,
+              height: isMobile ? 150 : 180,
               child: _TimelineCanvas(session: session),
             ),
           ],
