@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/sleep_session.dart';
+import '../models/user_profile.dart';
 
 class StorageService {
   static const String _sessionsBox = 'sleep_sessions';
@@ -45,4 +46,16 @@ class StorageService {
   dynamic getSetting(String key, {dynamic defaultValue}) {
     return _settings.get(key, defaultValue: defaultValue);
   }
+
+  Future<void> saveUserProfile(UserProfile profile) async {
+    await _settings.put('user_profile', profile.toJson());
+  }
+
+  UserProfile? getUserProfile() {
+    final json = _settings.get('user_profile') as String?;
+    if (json == null) return null;
+    return UserProfile.fromJson(json);
+  }
+
+  bool hasUserProfile() => _settings.containsKey('user_profile');
 }
